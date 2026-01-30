@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>나의 소셜 카드 덱</title>
+  <style>
+    :root{
+      /* App-icon palette inspired */
+      --blue:#2f7cff;
+      --teal:#23c7b6;
+      --pink:#ff55d6;
+      --ink:#111322;
+      --paper:#fbfbff;
+      --paper2:#f3f6ff;
+      --line:rgba(17,19,34,.12);
+      --shadow:0 18px 40px rgba(17,19,34,.12);
+      --shadow2:0 28px 60px rgba(17,19,34,.16);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      background:
+        radial-gradient(900px 600px at 12% 0%, rgba(47,124,255,.20), transparent 55%),
+        radial-gradient(900px 600px at 92% 20%, rgba(255,85,214,.18), transparent 55%),
+        radial-gradient(900px 600px at 55% 90%, rgba(35,199,182,.18), transparent 55%),
+        linear-gradient(180deg, var(--paper), var(--paper2));
+      color:var(--ink);
+      overflow-x:hidden;
+    }
+    .container{max-width:420px;margin:0 auto;padding:20px 16px 120px}
+    h1,h2{font-weight:950;line-height:1.18;margin:0 0 10px;letter-spacing:-.02em}
+    p{color:rgba(17,19,34,.72);line-height:1.65;margin:0}
+
+    /* Top UI */
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .brand{font-size:12px;letter-spacing:.14em;color:rgba(17,19,34,.55)}
+    .progress{height:10px;background:rgba(17,19,34,.08);border-radius:999px;overflow:hidden;flex:1;margin-left:12px}
+    .progress .fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--teal),var(--pink));width:0%;transition:width .35s ease}
+
+    /* Screen system */
+    .stage{position:relative;min-height:560px}
+    .screen{
+      position:absolute;inset:0;
+      opacity:0;transform:translateX(18px) scale(.99);
+      pointer-events:none;
+      transition:opacity .35s ease, transform .35s ease;
+    }
+    .screen.active{opacity:1;transform:translateX(0) scale(1);pointer-events:auto}
+
+    /* Intro */
+    .hero{
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+      background:linear-gradient(160deg, rgba(255,255,255,.82), rgba(255,255,255,.62));
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero:before{
+      content:'';
+      position:absolute;inset:-40px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(47,124,255,.25), transparent 45%),
+        radial-gradient(circle at 80% 40%, rgba(255,85,214,.20), transparent 50%),
+        radial-gradient(circle at 50% 90%, rgba(35,199,182,.18), transparent 45%);
+      transform:rotate(6deg);
+      pointer-events:none;
+    }
+    .hero > *{position:relative}
+    .hero .tag{display:inline-block;padding:7px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(17,19,34,.12);background:rgba(255,255,255,.7);color:rgba(17,19,34,.72);margin-bottom:10px}
+
+    /* Question card */
+    .qcard{
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+      background:linear-gradient(160deg, rgba(255,255,255,.84), rgba(255,255,255,.60));
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .qmeta{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .qno{font-size:12px;color:rgba(17,19,34,.55);letter-spacing:.08em}
+    .skip{font-size:12px;color:rgba(17,19,34,.55);text-decoration:underline;cursor:pointer}
+
+    .choices{margin-top:14px}
+    .choice{
+      background:rgba(255,255,255,.78);
+      border-radius:18px;
+      padding:14px 14px;
+      margin-top:12px;
+      cursor:pointer;
+      border:1px solid rgba(17,19,34,.12);
+      font-weight:850;
+      letter-spacing:-.01em;
+      position:relative;
+      overflow:hidden;
+      transform:translateY(0);
+      transition:transform .12s ease, filter .12s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .choice:active{transform:translateY(1px)}
+    .choice:hover{filter:brightness(1.02)}
+    .choice.selected{
+      border-color:rgba(47,124,255,.55);
+      box-shadow:0 10px 26px rgba(47,124,255,.14);
+    }
+    .choice.selected:before{
+      content:'';
+      position:absolute;inset:-60px;
+      background:
+        radial-gradient(circle at 25% 30%, rgba(47,124,255,.28), transparent 55%),
+        radial-gradient(circle at 80% 55%, rgba(255,85,214,.22), transparent 58%),
+        radial-gradient(circle at 45% 90%, rgba(35,199,182,.18), transparent 55%);
+      transform:rotate(8deg);
+      animation:glow .55s ease;
+    }
+    @keyframes glow{from{opacity:0}to{opacity:1}}
+
+    /* Next button */
+    .btn{
+      width:100%;
+      padding:16px;
+      margin-top:16px;
+      border-radius:18px;
+      border:none;
+      background:linear-gradient(90deg,var(--blue),var(--teal),var(--pink));
+      color:#fff;
+      font-size:16px;
+      font-weight:950;
+      cursor:pointer;
+      box-shadow:0 14px 30px rgba(17,19,34,.14);
+      opacity:.55;
+      transform:translateY(0);
+      transition:opacity .2s ease, transform .12s ease;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.enabled{opacity:1}
+
+    /* Result + IG friendly wrapper */
+    .resultWrap{margin-top:10px}
+    .igFrame{
+      width:100%;
+      border-radius:26px;
+      padding:14px;
+      background:
+        radial-gradient(420px 280px at 15% 0%, rgba(47,124,255,.24), transparent 55%),
+        radial-gradient(420px 280px at 90% 25%, rgba(255,85,214,.20), transparent 55%),
+        radial-gradient(420px 280px at 60% 100%, rgba(35,199,182,.20), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.58));
+      border:1px solid rgba(17,19,34,.10);
+      box-shadow: var(--shadow2);
+      position:relative;
+      overflow:hidden;
+    }
+    .igFrame:before{
+      content:'';
+      position:absolute;inset:-40px;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(255,85,214,.18), transparent 40%),
+        radial-gradient(circle at 90% 16%, rgba(35,199,182,.16), transparent 44%),
+        radial-gradient(circle at 20% 92%, rgba(47,124,255,.16), transparent 44%);
+      transform:rotate(-6deg);
+      pointer-events:none;
+    }
+    .igFrame > *{position:relative}
+
+    /* Sticker confetti */
+    .stickers{position:absolute;inset:0;pointer-events:none;opacity:.9}
+    .st{position:absolute;border-radius:16px;filter:drop-shadow(0 10px 18px rgba(17,19,34,.10));transform:rotate(-6deg)}
+    .st.a{left:10px;top:12px;width:58px;height:34px;background:rgba(255,255,255,.88);border:1px solid rgba(17,19,34,.10)}
+    .st.a:after{content:'NEW';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:950;font-size:12px;color:rgba(17,19,34,.78);letter-spacing:.12em}
+    .st.b{right:12px;top:14px;width:54px;height:54px;background:rgba(255,255,255,.88);border:1px solid rgba(17,19,34,.10);border-radius:18px;transform:rotate(10deg)}
+    .st.b:after{content:'★';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--pink)}
+    .st.c{left:12px;bottom:14px;width:78px;height:34px;background:rgba(255,255,255,.88);border:1px solid rgba(17,19,34,.10);transform:rotate(6deg)}
+    .st.c:after{content:'SOCIAL';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:950;font-size:11px;color:rgba(17,19,34,.75);letter-spacing:.14em}
+
+    /* TCG Card */
+    .card{
+      background:linear-gradient(160deg, rgba(255,255,255,.92), rgba(255,255,255,.68));
+      border-radius:22px;
+      padding:16px;
+      border:2px solid rgba(17,19,34,.12);
+      box-shadow:0 18px 40px rgba(17,19,34,.10);
+      position:relative;
+      perspective:1000px;
+      overflow:hidden;
+    }
+    .card:before{
+      content:'';
+      position:absolute;inset:6px;
+      border-radius:18px;
+      border:1px solid rgba(17,19,34,.10);
+      pointer-events:none;
+    }
+
+    .holo{
+      position:absolute;inset:-60px;
+      background:conic-gradient(from 120deg,
+        rgba(47,124,255,.00), rgba(47,124,255,.18),
+        rgba(35,199,182,.16), rgba(255,85,214,.18),
+        rgba(47,124,255,.00));
+      opacity:.45;
+      animation:holo 5s linear infinite;
+      pointer-events:none;
+      mix-blend-mode:multiply;
+    }
+    @keyframes holo{0%{transform:translateX(-28px) rotate(0deg)}100%{transform:translateX(28px) rotate(360deg)}}
+
+    .cardInner{position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+    .card.flipped .cardInner{transform:rotateY(180deg)}
+    .face{backface-visibility:hidden;position:relative}
+    .back{position:absolute;inset:0;transform:rotateY(180deg);backface-visibility:hidden}
+
+    .rarityRow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .rarity{font-size:11px;letter-spacing:.14em;color:rgba(17,19,34,.65);font-weight:950}
+    .badge{
+      font-size:11px;font-weight:950;letter-spacing:.12em;
+      padding:6px 10px;border-radius:999px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(17,19,34,.10);
+      color:rgba(17,19,34,.72);
+    }
+    .badge.epic{border-color:rgba(255,85,214,.35)}
+    .badge.rare{border-color:rgba(35,199,182,.35)}
+    .badge.common{border-color:rgba(47,124,255,.35)}
+
+    .card-title{font-size:22px;margin:2px 0 2px;font-weight:980;letter-spacing:-.02em}
+    .card-sub{font-size:13px;color:rgba(17,19,34,.70);margin-bottom:10px;font-weight:800}
+
+    /* Character art with unicorn vibe */
+    .art{
+      height:198px;
+      border-radius:18px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(47,124,255,.22), transparent 48%),
+        radial-gradient(circle at 80% 35%, rgba(255,85,214,.18), transparent 52%),
+        radial-gradient(circle at 55% 95%, rgba(35,199,182,.18), transparent 52%),
+        linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,255,255,.45));
+      border:1px solid rgba(17,19,34,.10);
+      overflow:hidden;
+      margin-bottom:10px;
+      position:relative;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .art img{width:100%;height:100%;object-fit:cover;display:block}
+    .artLabel{position:absolute;bottom:10px;left:10px;background:rgba(255,255,255,.72);padding:7px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(17,19,34,.10);backdrop-filter:blur(10px);font-weight:900;color:rgba(17,19,34,.75)}
+
+    /* Cute ornament SVG layer */
+    .spark{position:absolute;inset:0;opacity:.85;pointer-events:none}
+
+    .ability{
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(17,19,34,.10);
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:13px;
+      margin-bottom:10px;
+      color:rgba(17,19,34,.78);
+      font-weight:850;
+    }
+    .ability .k{font-weight:980}
+
+    .stat{font-size:12px;margin-top:6px;color:rgba(17,19,34,.68);font-weight:900}
+    .bar{height:10px;background:rgba(17,19,34,.08);border-radius:10px;overflow:hidden;margin-bottom:10px}
+    .bar .fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--teal),var(--pink));width:0%;transition:width .65s ease}
+
+    .row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:12px}
+    .mini{font-size:12px;color:rgba(17,19,34,.58);font-weight:800}
+    .flipBtn{
+      border:none;
+      background:rgba(47,124,255,.12);
+      color:rgba(47,124,255,.92);
+      font-weight:950;
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+    }
+
+    .share{margin-top:16px;display:grid;gap:12px}
+    .share button{padding:14px;border-radius:16px;border:none;font-weight:950;cursor:pointer}
+    .save{background:#fff;color:var(--ink);border:1px solid rgba(17,19,34,.10)}
+    .shareSys{background:linear-gradient(90deg,var(--blue),var(--teal),var(--pink));color:#fff}
+
+    .note{margin-top:14px;font-size:13px;color:rgba(17,19,34,.58);text-align:center;font-weight:800}
+
+    .shake{animation:shake .35s ease}
+    @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="topbar">
+      <div class="brand">SOCIAL CARD DECK</div>
+      <div class="progress" aria-label="progress"><div class="fill" id="pfill"></div></div>
+    </div>
+
+    <div class="stage">
+
+      <!-- Intro -->
+      <div class="screen active" id="intro">
+        <div class="hero">
+          <div class="tag">8문항 · 30초</div>
+          <h1>나의 소셜 카드 덱</h1>
+          <p>사람을 만날 때의 플레이 스타일을 카드로 뽑습니다.</p>
+          <button class="btn enabled" onclick="goTo(1)">카드 뽑기 시작</button>
+        </div>
+      </div>
+
+      <!-- Questions -->
+      <div class="screen" id="qscreen">
+        <div class="qcard" id="qcard">
+          <div class="qmeta">
+            <div class="qno" id="qno">Q1 / 8</div>
+            <div class="skip" onclick="skip()">건너뛰기</div>
+          </div>
+          <h2 id="qtitle">질문</h2>
+          <p id="qdesc">상황을 떠올리고 가장 가까운 선택지를 고르세요.</p>
+          <div class="choices" id="choices"></div>
+          <button class="btn" id="nextBtn" onclick="nextQ()">다음</button>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="screen" id="result">
+        <h2>뽑은 카드</h2>
+        <div class="resultWrap" id="capture">
+          <div class="igFrame">
+            <div class="stickers">
+              <div class="st a"></div>
+              <div class="st b"></div>
+              <div class="st c"></div>
+            </div>
+            <div class="card" id="card">
+              <div class="holo"></div>
+              <div class="cardInner" id="cardInner">
+                <div class="face" id="cardFront"></div>
+                <div class="back" id="cardBack"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="mini" id="miniLine">프로필 표기용 타입 값입니다.</div>
+          <button class="flipBtn" onclick="flipCard()">앞/뒤</button>
+        </div>
+
+        <div class="share">
+          <button class="save" onclick="saveImage()">이미지로 저장</button>
+          <button class="shareSys" onclick="shareSystem()">공유</button>
+        </div>
+
+        <div class="note">이미지는 인스타 업로드 비율에 맞게 여백이 포함됩니다.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    // --------- Quiz Model (8 questions) ---------
+    const questions = [
+      {
+        title: '약속 없는 주말이 생기면?',
+        desc: '갑자기 비는 시간이 생겼을 때, 가장 먼저 하는 행동에 가깝게 고르세요.',
+        options: [
+          { text: '혼자만의 계획부터 세운다. 장소나 루틴을 정해두면 마음이 편하다.', w: { solo: 2 } },
+          { text: '그때그때 기분 따라 움직인다. 뭘 할지 정해두지 않아도 된다.', w: { flow: 2 } },
+          { text: '누가 부르면 움직인다. 혼자서 뭘 하기보다 초대가 있으면 좋다.', w: { flow: 1 } },
+          { text: '내가 먼저 사람을 모은다. 번개라도 열어서 뭔가를 만들고 싶다.', w: { lead: 2 } },
+        ]
+      },
+      {
+        title: '모임에서 나는 보통?',
+        desc: '처음 보는 사람들과 함께 있을 때의 기본 포지션에 가까운 것을 고르세요.',
+        options: [
+          { text: '조용히 듣는 편이다. 흐름을 파악한 뒤 천천히 참여한다.', w: { solo: 1 } },
+          { text: '분위기에 맞춘다. 누가 어떤 톤인지 보고 자연스럽게 섞인다.', w: { flow: 1 } },
+          { text: '대화를 시작하는 쪽이다. 질문을 던지거나 첫 말을 꺼낸다.', w: { lead: 2 } },
+          { text: '흐름을 정리하는 쪽이다. 다음 순서나 방향을 잡아주는 편이다.', w: { struct: 2 } },
+        ]
+      },
+      {
+        title: '새로운 만남에서 더 중요한 건?',
+        desc: '새 모임을 선택할 때, 우선순위가 더 높은 쪽을 고르세요.',
+        options: [
+          { text: '편안함. 말이 많지 않아도 어색하지 않은 분위기가 좋다.', w: { solo: 1 } },
+          { text: '재미. 예상치 못한 전개나 가벼운 텐션이 더 끌린다.', w: { flow: 2 } },
+          { text: '목적과 맥락. 무엇을 하려는 모임인지가 선명해야 한다.', w: { struct: 2 } },
+          { text: '사람 케미. 구성원이 흥미롭거나 대화가 잘 통하면 좋다.', w: { lead: 1 } },
+        ]
+      },
+      {
+        title: '처음 가는 모임에서 보통?',
+        desc: '처음 방문한 모임에서, 초반 10분의 행동을 떠올리고 고르세요.',
+        options: [
+          { text: '관찰부터 한다. 누가 주도하는지, 분위기가 어떤지 먼저 본다.', w: { solo: 2 } },
+          { text: '말 걸어주면 자연스럽게 섞인다. 초반엔 따라가면서 편해진다.', w: { flow: 2 } },
+          { text: '먼저 인사하거나 질문한다. 어색함을 줄이기 위해 내가 움직인다.', w: { lead: 2 } },
+          { text: '진행 방식을 파악한다. 규칙이나 흐름을 이해하면 더 편하다.', w: { struct: 2 } },
+        ]
+      },
+      {
+        title: '모임이 끝난 뒤 더 자주 드는 생각은?',
+        desc: '집에 돌아온 다음의 마음 상태에 가까운 것을 고르세요.',
+        options: [
+          { text: '혼자 쉬는 시간이 필요하다. 에너지를 회복해야 다음이 가능하다.', w: { solo: 2 } },
+          { text: '다음엔 누가 올지 궁금하다. 다음 흐름이 어떻게 될지 상상한다.', w: { flow: 1 } },
+          { text: '다음에 내가 뭘 제안할지 생각한다. 다음 액션이 떠오른다.', w: { lead: 2 } },
+          { text: '이 모임이 계속될 수 있을지 본다. 지속되는 구조가 있는지 본다.', w: { struct: 2 } },
+        ]
+      },
+      {
+        title: '관계를 유지하는 방식에 더 가까운 것은?',
+        desc: '시간이 지나도 이어지는 관계의 형태를 떠올려 고르세요.',
+        options: [
+          { text: '필요할 때만 만난다. 관계는 가벼워도 충분하다고 생각한다.', w: { solo: 1 } },
+          { text: '자연스럽게 이어지면 좋다. 억지 약속보단 흐름이 중요하다.', w: { flow: 2 } },
+          { text: '내가 연결을 만든다. 사람과 사람을 이어주는 편이다.', w: { lead: 2 } },
+          { text: '정기적인 약속이 좋다. 주기와 규칙이 있으면 더 오래 간다.', w: { struct: 2 } },
+        ]
+      },
+      {
+        title: '모임에서 사람이 줄어들면?',
+        desc: '참여자가 줄어드는 상황에서, 실제로 더 많이 하는 행동에 가깝게 고르세요.',
+        options: [
+          { text: '자연스러운 흐름이라 생각한다. 남은 사람과 그냥 계속하면 된다.', w: { flow: 2 } },
+          { text: '나도 발을 뺀다. 흐름이 약해지면 굳이 붙잡지 않는다.', w: { solo: 1 } },
+          { text: '다른 사람을 불러본다. 새 피가 들어오면 다시 살아난다.', w: { lead: 2 } },
+          { text: '운영 방식을 바꿔본다. 시간, 규칙, 역할을 조정해 본다.', w: { struct: 2 } },
+        ]
+      },
+      {
+        title: '모임을 추천할 때의 기준은?',
+        desc: '친구에게 추천한다고 가정하고, 가장 먼저 체크하는 항목을 고르세요.',
+        options: [
+          { text: '혼자 가도 부담 없는지. 처음 가는 사람도 편할지 본다.', w: { solo: 2 } },
+          { text: '분위기가 편한지. 긴장하지 않아도 되는 분위기인지 본다.', w: { flow: 2 } },
+          { text: '사람 구성이 흥미로운지. 대화가 재밌을 만한 사람이 있는지 본다.', w: { lead: 2 } },
+          { text: '오래 유지될 수 있는지. 정기성이나 운영이 있는지 본다.', w: { struct: 2 } },
+        ]
+      }
+    ];
+
+    const TYPES = {
+      solo: {
+        name: '솔로 안정형',
+        desc: '혼자서도 잘 굴러가는 타입',
+        ability: '특성 · 혼자 참가 페널티 없음',
+        profile: '소셜 카드 · 솔로 안정형',
+        back: {
+          summary: '관찰 → 선택 → 참여 순서가 자연스러운 타입입니다.',
+          keywords: ['단독 참여','관찰','선택적 교류'],
+          starter: '처음 오면 보통 어떻게 참여하는 편이에요?',
+          works: ['소수 인원','비정기 모임','조용한 활동'],
+          avoid: ['즉석 강제 참여','과한 아이스브레이킹'],
+          oneLiner: '혼자여도 괜찮고, 함께여도 괜찮게 만드는 방식.'
+        },
+        artLabel: 'SOLO CORE'
+      },
+      flow: {
+        name: '흐름 참여형',
+        desc: '초대되면 자연스럽게 움직임',
+        ability: '특성 · 초대 반응 +1',
+        profile: '소셜 카드 · 흐름 참여형',
+        back: {
+          summary: '계획보다 분위기와 흐름을 따라 참여하는 타입입니다.',
+          keywords: ['초대','분위기','즉흥'],
+          starter: '오늘 분위기 어떤 게 제일 좋았어요?',
+          works: ['편한 톤','가벼운 일정','즉흥 번개'],
+          avoid: ['강한 규칙','과한 사전 준비'],
+          oneLiner: '흐름이 좋으면 참여 확률이 올라갑니다.'
+        },
+        artLabel: 'FLOW TYPE'
+      },
+      lead: {
+        name: '촉매형',
+        desc: '사람을 모이게 만드는 타입',
+        ability: '특성 · 번개 제안 보너스',
+        profile: '소셜 카드 · 촉매형',
+        back: {
+          summary: '대화의 시작, 제안, 확산에서 강점이 있는 타입입니다.',
+          keywords: ['제안','확산','시작'],
+          starter: '다음엔 어떤 걸 해보면 재밌을까요?',
+          works: ['새 멤버 환영','새로운 주제','첫 만남'],
+          avoid: ['역할 공백','의사결정 지연'],
+          oneLiner: '정체된 판에 새로운 전개를 만듭니다.'
+        },
+        artLabel: 'CATALYST'
+      },
+      struct: {
+        name: '구조 설계형',
+        desc: '판과 흐름을 설계하는 타입',
+        ability: '특성 · 지속 모임 강화',
+        profile: '소셜 카드 · 구조 설계형',
+        back: {
+          summary: '규칙, 역할, 루틴이 잡혀 있으면 오래 참여하는 타입입니다.',
+          keywords: ['정기성','운영','구조화'],
+          starter: '이 모임은 보통 어떤 방식으로 이어져요?',
+          works: ['정기 모임','역할 분담','운영 체계'],
+          avoid: ['불명확한 규칙','일정 혼선'],
+          oneLiner: '지속 가능한 판을 만듭니다.'
+        },
+        artLabel: 'ARCHITECT'
+      }
+    };
+
+    // Replace with real AI character images per type (URL)
+    const ART = { solo:null, flow:null, lead:null, struct:null };
+
+    // --------- State ---------
+    let qIndex = 0;
+    let selectedIndex = null;
+    let score = { solo:0, flow:0, lead:0, struct:0 };
+
+    const pfill = document.getElementById('pfill');
+    const qno = document.getElementById('qno');
+    const qtitle = document.getElementById('qtitle');
+    const qdesc = document.getElementById('qdesc');
+    const choicesEl = document.getElementById('choices');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function setProgress(){
+      const pct = (qIndex/8)*100;
+      pfill.style.width = pct + '%';
+    }
+
+    function showScreen(id){
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function goTo(){
+      qIndex = 0; selectedIndex = null; score = { solo:0, flow:0, lead:0, struct:0 };
+      setProgress();
+      showScreen('qscreen');
+      renderQuestion();
+    }
+
+    function renderQuestion(){
+      const q = questions[qIndex];
+      qno.textContent = `Q${qIndex+1} / 8`;
+      qtitle.textContent = q.title;
+      qdesc.textContent = q.desc;
+
+      choicesEl.innerHTML = '';
+      selectedIndex = null;
+      nextBtn.classList.remove('enabled');
+
+      q.options.forEach((opt, idx)=>{
+        const div = document.createElement('div');
+        div.className = 'choice';
+        div.textContent = opt.text;
+        div.onclick = ()=> selectChoice(idx);
+        choicesEl.appendChild(div);
+      });
+
+      setProgress();
+    }
+
+    function selectChoice(idx){
+      selectedIndex = idx;
+      [...choicesEl.children].forEach((c,i)=>c.classList.toggle('selected', i===idx));
+      nextBtn.classList.add('enabled');
+    }
+
+    function applyChoice(){
+      if(selectedIndex===null) return false;
+      const w = questions[qIndex].options[selectedIndex].w;
+      Object.keys(w).forEach(k=>{ score[k] += w[k]; });
+      return true;
+    }
+
+    function nextQ(){
+      if(!applyChoice()){
+        const el = document.getElementById('qcard');
+        el.classList.remove('shake');
+        void el.offsetWidth;
+        el.classList.add('shake');
+        return;
+      }
+      qIndex++;
+      if(qIndex<8) renderQuestion();
+      else finish();
+    }
+
+    function skip(){
+      qIndex++;
+      if(qIndex<8) renderQuestion();
+      else finish();
+    }
+
+    function finish(){
+      pfill.style.width = '100%';
+      showScreen('result');
+
+      const entries = Object.entries(score).sort((a,b)=>b[1]-a[1]);
+      const main = entries[0][0];
+      const sub = entries[1][0];
+      const mainScore = entries[0][1];
+
+      // ranges roughly: solo<=12 flow<=13 lead<=14 struct<=14
+      const rarity = mainScore >= 12 ? 'EPIC' : (mainScore >= 9 ? 'RARE' : 'COMMON');
+
+      renderCard(main, sub, rarity);
+    }
+
+    function badgeClass(r){
+      if(r==='EPIC') return 'epic';
+      if(r==='RARE') return 'rare';
+      return 'common';
+    }
+
+    function sparkSvg(){
+      return `
+        <svg class="spark" viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="${getComputedStyle(document.documentElement).getPropertyValue('--blue').trim()}" stop-opacity="0.45"/>
+              <stop offset="0.5" stop-color="${getComputedStyle(document.documentElement).getPropertyValue('--teal').trim()}" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="${getComputedStyle(document.documentElement).getPropertyValue('--pink').trim()}" stop-opacity="0.40"/>
+            </linearGradient>
+          </defs>
+          <circle cx="52" cy="46" r="10" fill="url(#g1)"/>
+          <circle cx="310" cy="48" r="8" fill="url(#g1)"/>
+          <circle cx="300" cy="184" r="10" fill="url(#g1)"/>
+          <circle cx="78" cy="188" r="8" fill="url(#g1)"/>
+          <path d="M180 18 l10 18 20 10-20 10-10 18-10-18-20-10 20-10z" fill="url(#g1)" opacity="0.7"/>
+          <path d="M320 120 l7 12 14 7-14 7-7 12-7-12-14-7 14-7z" fill="url(#g1)" opacity="0.6"/>
+          <path d="M54 116 l7 12 14 7-14 7-7 12-7-12-14-7 14-7z" fill="url(#g1)" opacity="0.6"/>
+        </svg>
+      `;
+    }
+
+    function renderCard(main, sub, rarity){
+      const t = TYPES[main];
+      const subT = TYPES[sub];
+
+      const front = document.getElementById('cardFront');
+      const back = document.getElementById('cardBack');
+
+      const artHtml = ART[main]
+        ? `<img alt="${t.name}" src="${ART[main]}" />`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:950;color:rgba(17,19,34,.70);">AI 캐릭터 이미지 영역</div>`;
+
+      front.innerHTML = `
+        <div class="rarityRow">
+          <div class="rarity">SOCIAL CARD</div>
+          <div class="badge ${badgeClass(rarity)}">${rarity}</div>
+        </div>
+        <div class="card-title">${t.name}</div>
+        <div class="card-sub">${t.desc}</div>
+        <div class="art">${sparkSvg()}${artHtml}<div class="artLabel">${t.artLabel}</div></div>
+        <div class="ability"><span class="k">메인 특성</span> · ${t.ability.replace('특성 · ','')}</div>
+        <div class="ability"><span class="k">서브 특성</span> · ${subT.ability.replace('특성 · ','')}</div>
+
+        <div class="stat">혼자</div><div class="bar"><div class="fill" id="bSolo"></div></div>
+        <div class="stat">흐름</div><div class="bar"><div class="fill" id="bFlow"></div></div>
+        <div class="stat">주도</div><div class="bar"><div class="fill" id="bLead"></div></div>
+        <div class="stat">구조</div><div class="bar"><div class="fill" id="bStruct"></div></div>
+      `;
+
+      const b = t.back;
+      back.innerHTML = `
+        <div class="rarityRow">
+          <div class="rarity">CARD BACK</div>
+          <div class="badge ${badgeClass(rarity)}">${t.profile}</div>
+        </div>
+        <div class="card-title">${t.name}</div>
+        <div class="card-sub">${b.summary}</div>
+
+        <div class="ability"><span class="k">한 줄</span> · ${b.oneLiner}</div>
+        <div class="ability"><span class="k">키워드</span> · ${b.keywords.join(' · ')}</div>
+        <div class="ability"><span class="k">대화 시작</span> · ${b.starter}</div>
+        <div class="ability"><span class="k">잘 맞는 판</span> · ${b.works.join(' · ')}</div>
+        <div class="ability"><span class="k">주의 포인트</span> · ${b.avoid.join(' · ')}</div>
+      `;
+
+      const max = 14;
+      requestAnimationFrame(()=>{
+        document.getElementById('bSolo').style.width = Math.min((score.solo/max)*100,100) + '%';
+        document.getElementById('bFlow').style.width = Math.min((score.flow/max)*100,100) + '%';
+        document.getElementById('bLead').style.width = Math.min((score.lead/max)*100,100) + '%';
+        document.getElementById('bStruct').style.width = Math.min((score.struct/max)*100,100) + '%';
+      });
+
+      document.getElementById('card').classList.remove('flipped');
+    }
+
+    function flipCard(){
+      document.getElementById('card').classList.toggle('flipped');
+    }
+
+    async function saveImage(){
+      const target = document.getElementById('capture');
+      const canvas = await html2canvas(target, { backgroundColor: null, scale: 2 });
+      const link = document.createElement('a');
+      link.download = 'social_card.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    async function shareSystem(){
+      const target = document.getElementById('capture');
+      const canvas = await html2canvas(target, { backgroundColor: null, scale: 2 });
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+
+      if(navigator.share && blob){
+        const file = new File([blob], 'social_card.png', { type: 'image/png' });
+        try{
+          await navigator.share({ files: [file], title: '나의 소셜 카드', text: '소셜 카드 결과' });
+          return;
+        }catch(e){ }
+      }
+      await saveImage();
+      alert('이미지가 저장되었습니다. 원하는 앱에서 공유해보세요.');
+    }
+
+    // Init
+    document.getElementById('pfill').style.width = '0%';
+
+    // Hook intro button
+    // (kept inline in HTML; this ensures goTo exists)
+
+  </script>
+</body>
+</html>
